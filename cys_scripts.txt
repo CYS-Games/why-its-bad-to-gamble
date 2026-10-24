@@ -1,0 +1,92 @@
+====================================================================
+1. GLOBAL SCRIPT (Optional - Paste in "Global Page Script" if needed)
+====================================================================
+# Ensures WAGER never exceeds available MONEY
+IF %WAGER > %MONEY THEN
+BEGIN
+  %WAGER := %MONEY
+END
+
+
+====================================================================
+2. HUB PAGE LINK SCRIPTS (Where the player chooses their bet)
+====================================================================
+
+--- Link 1: "Bet $10 on ODD" ---
+%WAGER := 10
+%MYBET := 1
+
+--- Link 2: "Bet $10 on EVEN" ---
+%WAGER := 10
+%MYBET := 2
+
+--- Link 3: "Bet $50 on ODD" ---
+%WAGER := 50
+%MYBET := 1
+
+--- Link 4: "Bet $50 on EVEN" ---
+%WAGER := 50
+%MYBET := 2
+
+--- Link 5: "Raid $100 from Savings" ---
+IF %SAVINGS >= 100 THEN
+BEGIN
+  %SAVINGS := %SAVINGS - 100
+  %MONEY := %MONEY + 100
+  %STRESS := %STRESS + 15
+  %TRUST := %TRUST - 20
+END
+
+--- Link 6: "Walk Away & Go Home" ---
+# Note: In the CYS Editor, click the stop-sign icon next to this link
+# to make it ONLY visible when %URGE <= 75.
+%DAY := %DAY + 1
+
+
+====================================================================
+3. RESOLUTION PAGE SCRIPT (Calculates outcome & checks bankruptcy)
+====================================================================
+# Note: Also create `%ROLL` and `%REMAINDER` in your Variables tab
+# (Min: -, Max: -, Start: 0, Disp: No) so CYS recognizes them.
+
+%ROLL := 1D37 - 1
+
+IF %ROLL = 0 THEN
+BEGIN
+  # Landed on 0 (The House Edge automatic loss)
+  %MONEY := %MONEY - %WAGER
+  %STRESS := %STRESS + 10
+  %URGE := %URGE + 15
+  $PAGETEXT := $PAGETEXT + "<p><b>The wheel landed on 0!</b> Because of the house zero, both Odd and Even lose. You lost $" + %WAGER + ".</p>"
+END
+ELSE
+BEGIN
+  # Modulo check for Even (0) vs Odd (1)
+  %REMAINDER := %ROLL - ((%ROLL / 2) * 2)
+
+  IF %REMAINDER = 1 AND %MYBET = 1 THEN
+  BEGIN
+    %MONEY := %MONEY + %WAGER
+    %URGE := %URGE + 5
+    $PAGETEXT := $PAGETEXT + "<p>The number was <b>" + %ROLL + " (Odd)</b>. You won $" + %WAGER + "! Yet you feel the urge to keep going...</p>"
+  END
+  ELSE IF %REMAINDER = 0 AND %MYBET = 2 THEN
+  BEGIN
+    %MONEY := %MONEY + %WAGER
+    %URGE := %URGE + 5
+    $PAGETEXT := $PAGETEXT + "<p>The number was <b>" + %ROLL + " (Even)</b>. You won $" + %WAGER + "! Yet you feel the urge to keep going...</p>"
+  END
+  ELSE
+  BEGIN
+    %MONEY := %MONEY - %WAGER
+    %STRESS := %STRESS + 10
+    %URGE := %URGE + 10
+    $PAGETEXT := $PAGETEXT + "<p>The number was <b>" + %ROLL + "</b>. You lost $" + %WAGER + ". Your chest tightens as you think about winning it back.</p>"
+  END
+END
+
+# Bankruptcy Check (Change @P99 to the actual Page ID of your Game Over page)
+IF %MONEY <= 0 THEN
+BEGIN
+  $DEST := @P99
+END
